@@ -1,0 +1,233 @@
+openapi: '3.0.2'
+info:
+  title: TODO
+  version: '1.0'
+servers:
+  - url: http://localhost:3000
+paths:
+  /tasks:
+    get:
+      summary: Retorna uma listagem de tarefas
+      description: |
+        Retorna uma listagem de tarefas
+      tags:
+        - tasks
+      parameters:
+        - in: query
+          name: status
+          description: Filtra tarefas por status
+          required: false
+          schema:
+            $ref: '#/components/schemas/TaskStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+    post:
+      summary: Cria uma nova tarefa
+      description: |
+        Cria uma nova tarefa
+      tags:
+        - tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+  /tasks/{id}:
+    get:
+      summary: Retorna uma tarefa pelo seu id
+      description: Retorna uma tarefa pelo seu id
+      tags:
+        - tasks
+      parameters:
+        - $ref: '#/components/parameters/TaskIDPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: '#/components/schemas/Task'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+    put:
+      summary: Atualiza o conteudo de uma tarefa
+      description: |
+        Atualiza o conteudo de uma tarefa
+      tags:
+        - tasks
+      parameters:
+        - $ref: '#/components/parameters/TaskIDPath'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: '#/components/schemas/Task'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+    delete:
+      summary: Exclui uma tarefa
+      description: |
+        Exclui uma tarefa
+      tags:
+        - tasks
+      parameters:
+        - $ref: '#/components/parameters/TaskIDPath'
+      responses:
+        '204':
+          description: OK
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        default:
+          $ref: '#/components/responses/UnexpectedError'
+components:
+  responses:
+    UnexpectedError:
+      description: Unexpected Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    CreateTaskRequest:
+      example:
+        subject: Do the groceries
+        description: |
+          [] Bananas
+          [] Apple
+      required:
+        - subject
+        - description
+      properties:
+        subject:
+          type: string
+        description:
+          type: string
+    UpdateTaskRequest:
+      example:
+        subject: Do the groceries
+        description: |
+          [] Bananas
+          [] Apple
+      required:
+        - subject
+        - description
+        - Status
+      properties:
+        subject:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+    Task:
+      example:
+        id: 'T1234'
+        subject: 'Do the groceries'
+        description: |
+          [] Bananas
+          [] Apple
+        status:
+          $ref: '#/components/schemas/TaskStatus/example'
+        created_at: '2017-07-21T17:32:28Z'
+        updated_at: '2017-07-21T17:32:28Z'
+      required:
+        - id
+        - subject
+        - description
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+        subject:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Error:
+      example:
+        message: An error description
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+    TaskStatus:
+      example: TODO
+      type: string
+      enum:
+        - TODO
+        - DONE
+  parameters:
+    TaskIDPath:
+      in: path
+      name: id
+      schema:
+        type: string
+      required: true
+      description: Task ID
+      example: T12345
