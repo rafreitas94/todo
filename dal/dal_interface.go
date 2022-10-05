@@ -10,7 +10,7 @@ type DataAccessLayerInterface interface {
 
 	ReadTask(taskID string) (Task, error)
 
-	UpdateTask(req UpdateTaskRequest) (Task, error)
+	UpdateTask(taskID string, req UpdateTaskRequest) (Task, error)
 
 	DeleteTask(taskID string) error
 

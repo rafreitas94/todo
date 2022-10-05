@@ -8,6 +8,13 @@ type CreateTaskRequest struct {
 type UpdateTaskRequest struct {
 	Subject     string
 	Description string
+	Status      string
+}
+
+type PatchTaskRequest struct {
+	Subject     *string
+	Description *string
+	Status      *string
 }
 
 type ListTaskRequest struct {

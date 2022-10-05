@@ -2,6 +2,7 @@ package dal
 
 import (
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -28,6 +29,9 @@ func (d DataAccessLayerInMemory) CreateTask(req CreateTaskRequest) (Task, error)
 		ID:          taskID,
 		Subject:     req.Subject,
 		Description: req.Description,
+		Status:      "TODO",
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
 	d.tasksMap[taskID] = newTask
@@ -45,19 +49,80 @@ func (d DataAccessLayerInMemory) ReadTask(taskID string) (Task, error) {
 	return task, nil
 }
 
-func (DataAccessLayerInMemory) UpdateTask(req UpdateTaskRequest) (Task, error) {
-	return Task{}, nil
+// PatchTask atualiza parcialmente a tarefa
+func (d DataAccessLayerInMemory) PatchTask(taskID string, req PatchTaskRequest) (Task, error) {
+
+	task, err := d.ReadTask(taskID)
+	if err != nil { // se a task nao existe
+		return task, err
+	}
+
+	if req.Subject != nil {
+		task.Subject = *req.Subject // * faz o dereference do ponteiro para o valor concreto
+	}
+
+	if req.Description != nil {
+		task.Description = *req.Description // * faz o dereference do ponteiro para o valor concreto
+	}
+
+	if req.Status != nil {
+		task.Status = *req.Status // * faz o dereference do ponteiro para o valor concreto
+	}
+
+	task.UpdatedAt = time.Now()
+
+	d.tasksMap[taskID] = task
+
+	return task, nil
 }
 
-func (DataAccessLayerInMemory) DeleteTask(taskID string) error {
+func (d DataAccessLayerInMemory) UpdateTask(taskID string, req UpdateTaskRequest) (Task, error) {
+
+	task, err := d.ReadTask(taskID)
+	if err != nil { // se a task nao existe
+		return task, err
+	}
+
+	task.Subject = req.Subject
+	task.Description = req.Description
+	task.Status = req.Status
+	task.UpdatedAt = time.Now()
+
+	d.tasksMap[taskID] = task
+
+	return task, nil
+}
+
+func (d DataAccessLayerInMemory) DeleteTask(taskID string) error {
+
+	_, err := d.ReadTask(taskID) // _ ignorar o retorno da task
+	if err != nil {              // se a task nao existe
+		return err
+	}
+
+	delete(d.tasksMap, taskID)
+
 	return nil
 }
 
-func (DataAccessLayerInMemory) ListAllTasks(req ListTaskRequest) ([]Task, error) {
-	// var task []Task
-	// task := []Task{}
-	// task = nil
+func (d DataAccessLayerInMemory) ListAllTasks(req ListTaskRequest) ([]Task, error) {
+	var tasks []Task
 
-	// nil é um slice vazio.
-	return nil, nil
+	// for é o unica keywork para iterar
+	// range para maps e slices (Arrays)
+	for _, task := range d.tasksMap {
+		tasks = append(tasks, task)
+	}
+
+	// no caso de um slice
+	// for i := 0; i < len(tasks); i++ {
+	// 	task := tasks[i]
+	// }
+
+	// // equivalente com slice
+	// for i, task := range tasks {
+
+	// }
+
+	return tasks, nil
 }
