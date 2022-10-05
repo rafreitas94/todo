@@ -1,7 +1,6 @@
 package dal
 
 import (
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -43,7 +42,7 @@ func (d DataAccessLayerInMemory) ReadTask(taskID string) (Task, error) {
 	task, ok := d.tasksMap[taskID]
 	// if ok === true, taskID existe
 	if !ok {
-		return task, errors.New("não encontrado")
+		return task, ErrNotFound
 	}
 
 	return task, nil
