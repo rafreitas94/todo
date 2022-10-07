@@ -1,18 +1,18 @@
 package dal
 
-// dal -> data acess layer - camada de acesso a dados
-type DataAcessLayerInterface interface {
+// dal -> data access layer - camada de acesso a dados
+type DataAccessLayerInterface interface {
 
 	// CreateTask cria uma nova tarefa a partir
-	// do parametro req, retorna a tarefa criada
-	// e um erro
+	// do parametro req, returna a tarefa criada
+	// e um erro.
 	CreateTask(req CreateTaskRequest) (Task, error)
 
-	ReadTask(taskId string) (Task, error)
+	ReadTask(taskID string) (Task, error)
 
-	UpdateTask(req UpdateTaskRequest) (Task, error)
+	UpdateTask(taskID string, req UpdateTaskRequest) (Task, error)
 
-	DeleteTask(taskId string) error
+	DeleteTask(taskID string) error
 
-	ListAllTask(req ListTaskRequest) ([]Task, error)
+	ListAllTasks(req ListTaskRequest) ([]Task, error)
 }

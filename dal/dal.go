@@ -1,8 +1,8 @@
 package dal
 
-// NewDataAccessLayer constróis uma nova camada de banco de dados
-func NewDataAccessLayer() DataAcessLayerInterface {
+// NewDataAccessLayer constroi uma nova camada de acesso de dados
+func NewDataAccessLayer() DataAccessLayerInterface {
 	return DataAccessLayerInMemory{
-		taskMap: map[string]Task{},
+		tasksMap: map[string]Task{},
 	}
 }
