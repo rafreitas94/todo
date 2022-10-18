@@ -91,6 +91,12 @@ paths:
         - tasks
       parameters:
         - $ref: '#/components/parameters/TaskIDPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
       responses:
         '200':
           description: OK
@@ -157,10 +163,11 @@ components:
         description: |
           [] Bananas
           [] Apple
+        status: DONE
       required:
         - subject
         - description
-        - Status
+        - status
       properties:
         subject:
           type: string
