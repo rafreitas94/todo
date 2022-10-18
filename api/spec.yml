@@ -53,10 +53,8 @@ paths:
               schema:
                 type: object
                 properties:
-                  tasks:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Task'
+                  task:
+                    $ref: '#/components/schemas/Task'
         default:
           $ref: '#/components/responses/UnexpectedError'
   /tasks/{id}:
