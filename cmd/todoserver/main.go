@@ -8,6 +8,17 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+type CreateTaskAPIRequest struct {
+	Subject     string `json:"subject"` //struct tags - anotacao de campos de struct
+	Description string `json:"description"`
+}
+
+type UpdateTaskAPIRequest struct {
+	Subject     string `json:"subject"` //struct tags - anotacao de campos de struct
+	Description string `json:"description"`
+	Status      string `json:"status"`
+}
+
 type TaskAPIResponse struct {
 	Task dal.Task `json:"task"`
 }
@@ -52,6 +63,29 @@ func main() {
 
 	fmt.Println("ID:", newTask.ID)
 
+	// Create Task
+	e.POST("/tasks", func(c echo.Context) error {
+		var request CreateTaskAPIRequest
+
+		err := c.Bind(&request)
+		if err != nil {
+			return err
+		}
+
+		// request.Description
+		task, err := dalInterface.CreateTask(dal.CreateTaskRequest{
+			Subject:     request.Subject,
+			Description: request.Description,
+		})
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, TaskAPIResponse{
+			Task: task,
+		})
+	})
+
 	e.GET("/tasks/:task_id", func(c echo.Context) error {
 		taskID := c.Param("task_id")
 		task, err := dalInterface.ReadTask(taskID)
@@ -72,6 +106,26 @@ func main() {
 		}
 
 		return c.NoContent(http.StatusOK)
+	})
+
+	e.PUT("/tasks/:task_id", func(c echo.Context) error {
+		taskId := c.Param("task_id")
+
+		var request UpdateTaskAPIRequest
+
+		task, err := dalInterface.UpdateTask(taskId, dal.UpdateTaskRequest{
+			Subject:     request.Subject,
+			Description: request.Description,
+			Status:      request.Status,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, TaskAPIResponse{
+			Task: task,
+		})
 	})
 
 	e.GET("/tasks", func(c echo.Context) error {
