@@ -85,7 +85,7 @@ func (s *Server) Start(address string) error {
 
 		task, err := s.taskDal.CreateTask(dal.CreateTaskRequest{
 			Subject:     request.Subject,
-			Description: request.Subject,
+			Description: request.Description,
 		})
 		if err != nil {
 			return err
