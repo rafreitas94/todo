@@ -5,6 +5,7 @@ import (
 	"todo/dal"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type CreateTaskAPIRequest struct {
@@ -156,6 +157,60 @@ func (s *Server) Start(address string) error {
 			Tasks: tasks,
 		})
 	})
+
+	e.GET("/basic-auth", func(c echo.Context) error {
+
+		username, password, ok := c.Request().BasicAuth()
+
+		if !ok || (username != "usuario" || password != "senha") {
+			c.Response().Header().Add(echo.HeaderWWWAuthenticate, `Basic realm="teste"`)
+			return c.NoContent(http.StatusUnauthorized)
+		}
+
+		return c.String(http.StatusOK, "Autenticado!")
+	})
+
+	e.POST("/form-auth", func(c echo.Context) error {
+
+		username := c.FormValue("usuario")
+		password := c.FormValue("senha")
+
+		if username != "usuario" || password != "senha" {
+			return c.String(http.StatusUnauthorized, "usuário e/ou senha incorretos")
+		}
+
+		return c.String(http.StatusOK, "Autenticado!")
+	})
+
+	e.POST("/api-auth", func(c echo.Context) error {
+		type loginReq struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+		}
+
+		var req loginReq
+		err := c.Bind(&req)
+		if err != nil {
+			return err
+		}
+
+		err = s.taskDal.AuthenticateUser(req.Username, req.Password)
+		if err != nil {
+			return err
+		}
+
+		return c.String(http.StatusOK, "Autenticado!")
+	})
+
+	// para requisicoes XHR feitas de uma pagina web que nao
+	// esta hospedada no mesmo dominio da api.
+	e.Use(middleware.CORS())
+	// mais seguro.
+	// meu site frontend ta em web.maua.br
+	// minha api esta em api.maua.br
+	// e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+	// 	AllowOrigins: []string{"web.maua.br"},
+	// }))
 
 	return e.Start(":8080")
 }

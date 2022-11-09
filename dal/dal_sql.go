@@ -1,6 +1,8 @@
 package dal
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
@@ -126,4 +128,12 @@ func (d DataAccessLayerSQL) ListAllTasks(req ListTaskRequest) ([]Task, error) {
 	}
 
 	return listaDeTarefas, err
+}
+
+func (DataAccessLayerSQL) AuthenticateUser(username string, password string) error {
+	if password == "password" {
+		return nil
+	}
+
+	return fmt.Errorf("usuario e/ou senha invalidos")
 }

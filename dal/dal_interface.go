@@ -15,4 +15,6 @@ type DataAccessLayerInterface interface {
 	DeleteTask(taskID string) error
 
 	ListAllTasks(req ListTaskRequest) ([]Task, error)
+
+	AuthenticateUser(username string, password string) error
 }
