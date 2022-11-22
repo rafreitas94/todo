@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"time"
 	"todo/dal"
 
 	"github.com/labstack/echo/v4"
@@ -148,6 +149,15 @@ func (s *Server) Start(address string) error {
 
 	// LIST
 	e.GET("/tasks", func(c echo.Context) error {
+
+		cookie, err := c.Cookie("<nome do cookie>")
+		if err != nil { // se erro, cookie nao esta presente
+			// returnar um erro
+		}
+
+		// validar o cookie
+		// if validateCookie(cookie) { returnar um erro }
+
 		tasks, err := s.taskDal.ListAllTasks(dal.ListTaskRequest{})
 		if err != nil {
 			return err
@@ -166,6 +176,18 @@ func (s *Server) Start(address string) error {
 			c.Response().Header().Add(echo.HeaderWWWAuthenticate, `Basic realm="teste"`)
 			return c.NoContent(http.StatusUnauthorized)
 		}
+
+		// aqui estamos autenticados
+
+		// setar um cookie que sirva de autenticacao do usuario
+		c.SetCookie(&http.Cookie{
+			Name:     "<nome do cookie>",
+			Value:    "",
+			Domain:   "api.maua.br",
+			Expires:  time.Now().Add(2 * time.Second),
+			Secure:   true, // cookie valido somente quando utilizando HTTPS (exceto quando em localhost)
+			HttpOnly: true,
+		})
 
 		return c.String(http.StatusOK, "Autenticado!")
 	})
