@@ -130,10 +130,42 @@ func (d DataAccessLayerSQL) ListAllTasks(req ListTaskRequest) ([]Task, error) {
 	return listaDeTarefas, err
 }
 
-func (DataAccessLayerSQL) AuthenticateUser(username string, password string) error {
-	if password == "password" {
-		return nil
+// mapa de username e senha
+var users map[string]string
+
+// mapa de sessionid para username
+var sessions map[string]string
+
+func init() {
+	users = map[string]string{}
+	sessions = map[string]string{}
+	users["usuario"] = "senha"
+}
+
+func (DataAccessLayerSQL) AuthenticateSession(sessionID string) (string, error) {
+	sessionUsername, ok := sessions[sessionID]
+
+	if ok {
+		return sessionUsername, nil
 	}
 
-	return fmt.Errorf("usuario e/ou senha invalidos")
+	return "", fmt.Errorf("sessao nao existente")
+}
+
+func (DataAccessLayerSQL) AuthenticateUser(username string, password string) (string, error) {
+	// precisa ler o usuario e validar a senha atraves do banco
+	// como referencia o metodo ReadTask(taskID string)
+	// validar usuario e senha utilizando a tabela users do banco
+	// manter sessions armazenado em memorio nesse primeiro momento.
+	// precisa gerar uma session para o usuario.
+
+	storedPassword, ok := users[username]
+	if !ok || storedPassword != password {
+		return "", fmt.Errorf("Usuário ou senha incorretos.")
+	}
+
+	sessionID := uuid.NewString()
+	sessions[sessionID] = username
+
+	return sessionID, nil
 }

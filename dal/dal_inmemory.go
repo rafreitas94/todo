@@ -14,7 +14,11 @@ type DataAccessLayerInMemory struct {
 	tasksMap map[string]Task // um map eh inicializado sempre como nulo.
 }
 
-func (DataAccessLayerInMemory) AuthenticateUser(username string, password string) error {
+func (DataAccessLayerInMemory) AuthenticateUser(username string, password string) (string, error) {
+	panic("not implemented")
+}
+
+func (DataAccessLayerInMemory) AuthenticateSession(sessionID string) (string, error) {
 	panic("not implemented")
 }
 

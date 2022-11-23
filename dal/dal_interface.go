@@ -16,5 +16,10 @@ type DataAccessLayerInterface interface {
 
 	ListAllTasks(req ListTaskRequest) ([]Task, error)
 
-	AuthenticateUser(username string, password string) error
+	// AuthenticateUser retorna uma string contendo o id de uma sessao criada pelo usuario
+	// autenticado
+	AuthenticateUser(username string, password string) (string, error)
+
+	// AuthenticateSession retorna o username de um usuario autenticado pelo sessionID
+	AuthenticateSession(sessionID string) (string, error)
 }

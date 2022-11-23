@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 	"todo/dal"
@@ -76,8 +77,40 @@ func (s *Server) Start(address string) error {
 
 	e.HTTPErrorHandler = s.HTTPErrorHandler
 
-	// CREATE
-	e.POST("/tasks", func(c echo.Context) error {
+	// var authenticationMiddleware echo.MiddlewareFunc
+	authenticationMiddleware := func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			fmt.Println("executando o middleware de autenticacao")
+
+			cookie, err := c.Cookie("session")
+			if err != nil { // se erro, cookie nao esta presente
+				// 401 Unauthorized
+				fmt.Println("cookie de sessao nao esta presente na requisicao.")
+				return c.NoContent(http.StatusUnauthorized)
+			}
+
+			sessionId := cookie.Value
+
+			username, err := s.taskDal.AuthenticateSession(sessionId)
+			if err != nil {
+				// 401 Unauthorized
+				fmt.Println("cookie de sessao nao corresponde a uma sessao valida.")
+				return c.NoContent(http.StatusUnauthorized)
+			}
+
+			fmt.Println("usuario autenticado via sessao", username)
+
+			return next(c)
+		}
+	}
+
+	// e.Use(authenticationMiddleware)
+	// separar as rotas em rotas anonimas e rotas autenticadas
+	// utilizando subrouters
+
+	tasksGroups := e.Group("/tasks", authenticationMiddleware)
+	// CREATE = prefixo do grupo + a rota == /tasks
+	tasksGroups.POST("", func(c echo.Context) error {
 		var request CreateTaskAPIRequest
 
 		err := c.Bind(&request)
@@ -99,7 +132,7 @@ func (s *Server) Start(address string) error {
 	})
 
 	// READ
-	e.GET("/tasks/:task_id", func(c echo.Context) error {
+	tasksGroups.GET("/:task_id", func(c echo.Context) error {
 		taskID := c.Param("task_id")
 		task, err := s.taskDal.ReadTask(taskID)
 		if err != nil {
@@ -112,7 +145,7 @@ func (s *Server) Start(address string) error {
 	})
 
 	// UPDATE
-	e.PUT("/tasks/:task_id", func(c echo.Context) error {
+	tasksGroups.PUT("/:task_id", func(c echo.Context) error {
 		taskID := c.Param("task_id")
 
 		var request UpdateTaskAPIRequest
@@ -137,7 +170,7 @@ func (s *Server) Start(address string) error {
 	})
 
 	// DELETE
-	e.DELETE("/tasks/:task_id", func(c echo.Context) error {
+	tasksGroups.DELETE("/:task_id", func(c echo.Context) error {
 		taskID := c.Param("task_id")
 		err := s.taskDal.DeleteTask(taskID)
 		if err != nil {
@@ -148,16 +181,7 @@ func (s *Server) Start(address string) error {
 	})
 
 	// LIST
-	e.GET("/tasks", func(c echo.Context) error {
-
-		cookie, err := c.Cookie("<nome do cookie>")
-		if err != nil { // se erro, cookie nao esta presente
-			// returnar um erro
-		}
-
-		// validar o cookie
-		// if validateCookie(cookie) { returnar um erro }
-
+	tasksGroups.GET("", func(c echo.Context) error {
 		tasks, err := s.taskDal.ListAllTasks(dal.ListTaskRequest{})
 		if err != nil {
 			return err
@@ -169,25 +193,12 @@ func (s *Server) Start(address string) error {
 	})
 
 	e.GET("/basic-auth", func(c echo.Context) error {
-
 		username, password, ok := c.Request().BasicAuth()
 
 		if !ok || (username != "usuario" || password != "senha") {
 			c.Response().Header().Add(echo.HeaderWWWAuthenticate, `Basic realm="teste"`)
 			return c.NoContent(http.StatusUnauthorized)
 		}
-
-		// aqui estamos autenticados
-
-		// setar um cookie que sirva de autenticacao do usuario
-		c.SetCookie(&http.Cookie{
-			Name:     "<nome do cookie>",
-			Value:    "",
-			Domain:   "api.maua.br",
-			Expires:  time.Now().Add(2 * time.Second),
-			Secure:   true, // cookie valido somente quando utilizando HTTPS (exceto quando em localhost)
-			HttpOnly: true,
-		})
 
 		return c.String(http.StatusOK, "Autenticado!")
 	})
@@ -197,9 +208,21 @@ func (s *Server) Start(address string) error {
 		username := c.FormValue("usuario")
 		password := c.FormValue("senha")
 
-		if username != "usuario" || password != "senha" {
-			return c.String(http.StatusUnauthorized, "usuário e/ou senha incorretos")
+		sessionId, err := s.taskDal.AuthenticateUser(username, password)
+		if err != nil {
+			return c.NoContent(http.StatusUnauthorized)
 		}
+
+		// aqui estamos autenticados
+		// setar um cookie que sirva de autenticacao do usuario
+		c.SetCookie(&http.Cookie{
+			Name:     "session",
+			Value:    sessionId,
+			Domain:   "localhost",
+			Expires:  time.Now().Add(2 * time.Minute),
+			Secure:   true, // cookie valido somente quando utilizando HTTPS (exceto quando em localhost)
+			HttpOnly: true,
+		})
 
 		return c.String(http.StatusOK, "Autenticado!")
 	})
@@ -216,7 +239,7 @@ func (s *Server) Start(address string) error {
 			return err
 		}
 
-		err = s.taskDal.AuthenticateUser(req.Username, req.Password)
+		_, err = s.taskDal.AuthenticateUser(req.Username, req.Password)
 		if err != nil {
 			return err
 		}
