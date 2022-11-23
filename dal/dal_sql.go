@@ -34,6 +34,7 @@ func (d DataAccessLayerSQL) CreateTask(req CreateTaskRequest) (Task, error) {
 		Subject:     req.Subject,
 		Description: req.Description,
 		Status:      "TODO",
+		// Incluir um userID
 	}
 
 	err := d.db.Get(&task, `
@@ -152,18 +153,25 @@ func (DataAccessLayerSQL) AuthenticateSession(sessionID string) (string, error) 
 	return "", fmt.Errorf("sessao nao existente")
 }
 
-func (DataAccessLayerSQL) AuthenticateUser(username string, password string) (string, error) {
-	// precisa ler o usuario e validar a senha atraves do banco
-	// como referencia o metodo ReadTask(taskID string)
-	// validar usuario e senha utilizando a tabela users do banco
-	// manter sessions armazenado em memorio nesse primeiro momento.
-	// precisa gerar uma session para o usuario.
-
-	storedPassword, ok := users[username]
-	if !ok || storedPassword != password {
+func (d DataAccessLayerSQL) AuthenticateUser(username string, password string) (string, error) {
+	// alternativa mais segura
+	// buscar o hash de password do banco e fazer a validacao na aplicacao.
+	// SELECT password_hash from users where username = $1
+	// poderiamos utilizar uma biblioteca como bcrypt para validar
+	// a senha na aplicacao sem transmitir pela rede.
+	var authenticated bool
+	err := d.db.Get(&authenticated, `
+		SELECT (password = crypt($1, password)) FROM users where username = $2
+	`, password, username)
+	if err != nil {
 		return "", fmt.Errorf("Usuário ou senha incorretos.")
 	}
 
+	if !authenticated {
+		return "", fmt.Errorf("Usuário ou senha incorretos.")
+	}
+
+	// como utilizar o REDIS para armazenar as sessoes
 	sessionID := uuid.NewString()
 	sessions[sessionID] = username
 
