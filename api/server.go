@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"todo/auth"
 	"todo/dal"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -82,6 +84,10 @@ func (s *Server) Start(address string) error {
 		return func(c echo.Context) error {
 			fmt.Println("executando o middleware de autenticacao")
 
+			// com o JWT no cookie, validar o JWT recebido
+			// validando a assinature e a data de expiracao do token
+			// returnando o nome do usuario inserido na claim Subject.
+
 			cookie, err := c.Cookie("session")
 			if err != nil { // se erro, cookie nao esta presente
 				// 401 Unauthorized
@@ -91,7 +97,7 @@ func (s *Server) Start(address string) error {
 
 			sessionId := cookie.Value
 
-			username, err := s.taskDal.AuthenticateSession(sessionId)
+			username, err := s.taskDal.AuthenticateSession(sessionId) //
 			if err != nil {
 				// 401 Unauthorized
 				fmt.Println("cookie de sessao nao corresponde a uma sessao valida.")
@@ -204,7 +210,6 @@ func (s *Server) Start(address string) error {
 	})
 
 	e.POST("/form-auth", func(c echo.Context) error {
-
 		username := c.FormValue("usuario")
 		password := c.FormValue("senha")
 
@@ -213,11 +218,23 @@ func (s *Server) Start(address string) error {
 			return c.NoContent(http.StatusUnauthorized)
 		}
 
+		claims := jwt.RegisteredClaims{
+			Issuer:    "todo-app",
+			Subject:   username,
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(2 * time.Minute)),
+			ID:        sessionId,
+		}
+
+		jwtString, err := auth.SignJWTClaims(claims)
+		if err != nil {
+			return err
+		}
+
 		// aqui estamos autenticados
 		// setar um cookie que sirva de autenticacao do usuario
 		c.SetCookie(&http.Cookie{
 			Name:     "session",
-			Value:    sessionId,
+			Value:    jwtString,
 			Domain:   "localhost",
 			Expires:  time.Now().Add(2 * time.Minute),
 			Secure:   true, // cookie valido somente quando utilizando HTTPS (exceto quando em localhost)
