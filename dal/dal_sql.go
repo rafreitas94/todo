@@ -1,19 +1,25 @@
 package dal
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"time"
 
+	"github.com/go-redis/redis/v9"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
 type DataAccessLayerSQL struct {
-	db *sqlx.DB
+	db          *sqlx.DB
+	redisClient *redis.Client
 }
 
-func NewDataAccessLayerSQL(db *sqlx.DB) *DataAccessLayerSQL {
+func NewDataAccessLayerSQL(db *sqlx.DB, redisClient *redis.Client) *DataAccessLayerSQL {
 	return &DataAccessLayerSQL{
-		db: db,
+		db:          db,
+		redisClient: redisClient,
 	}
 }
 
@@ -110,12 +116,22 @@ func (d DataAccessLayerSQL) UpdateTask(taskID string, req UpdateTaskRequest) (Ta
 func (d DataAccessLayerSQL) DeleteTask(taskID string) error {
 	// d.db.Exec("DELETE")
 
+	redisKey := "operation:list-todos"
+	d.redisClient.Del(context.Background(), redisKey)
 	_, err := d.db.Exec("DELETE FROM tasks WHERE id = $1", taskID)
 	return err
 }
 
 func (d DataAccessLayerSQL) ListAllTasks(req ListTaskRequest) ([]Task, error) {
 	var listaDeTarefas []Task
+
+	redisKey := "operation:list-todos"
+	cachedValue := d.redisClient.Get(context.Background(), redisKey).Val()
+	if cachedValue != "" {
+		err := json.Unmarshal([]byte(cachedValue), &listaDeTarefas)
+		// retornar valor cacheado.
+		return listaDeTarefas, err
+	}
 
 	err := d.db.Select(&listaDeTarefas, "SELECT * FROM tasks")
 	if err != nil {
@@ -125,32 +141,29 @@ func (d DataAccessLayerSQL) ListAllTasks(req ListTaskRequest) ([]Task, error) {
 	// aqui eh para evitar a serializaçao de uma lista nula (vazia) em go
 	// como nulo em json.
 	if listaDeTarefas == nil {
-		return []Task{}, nil
+		listaDeTarefas = []Task{}
+	}
+
+	byteValue, err := json.Marshal(listaDeTarefas)
+	if err != nil {
+		return nil, err
+	}
+	err = d.redisClient.Set(context.Background(), redisKey, string(byteValue), 30*time.Second).Err()
+	if err != nil {
+		return nil, err
 	}
 
 	return listaDeTarefas, err
 }
 
-// mapa de username e senha
-var users map[string]string
-
-// mapa de sessionid para username
-var sessions map[string]string
-
-func init() {
-	users = map[string]string{}
-	sessions = map[string]string{}
-	users["usuario"] = "senha"
-}
-
-func (DataAccessLayerSQL) AuthenticateSession(sessionID string) (string, error) {
-	sessionUsername, ok := sessions[sessionID]
-
-	if ok {
-		return sessionUsername, nil
+func (d DataAccessLayerSQL) AuthenticateSession(sessionID string) (string, error) {
+	redisKey := "session:" + sessionID
+	sessionUsername, err := d.redisClient.Get(context.Background(), redisKey).Result()
+	if err != nil {
+		return "", err
 	}
 
-	return "", fmt.Errorf("sessao nao existente")
+	return sessionUsername, nil
 }
 
 func (d DataAccessLayerSQL) AuthenticateUser(username string, password string) (string, error) {
@@ -173,7 +186,12 @@ func (d DataAccessLayerSQL) AuthenticateUser(username string, password string) (
 
 	// como utilizar o REDIS para armazenar as sessoes
 	sessionID := uuid.NewString()
-	sessions[sessionID] = username
+	redisKey := "session:" + sessionID
+	ttl := 2 * time.Minute // time to live
+	err = d.redisClient.SetEx(context.Background(), redisKey, username, ttl).Err()
+	if err != nil {
+		return "", err
+	}
 
 	return sessionID, nil
 }

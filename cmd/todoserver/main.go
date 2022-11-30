@@ -5,6 +5,7 @@ import (
 	"todo/api"
 	"todo/dal"
 
+	"github.com/go-redis/redis/v9"
 	"github.com/jmoiron/sqlx"
 
 	_ "github.com/lib/pq"
@@ -24,7 +25,11 @@ func main() {
 		panic(err)
 	}
 
-	dalInterface := dal.NewDataAccessLayerSQL(db)
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
+
+	dalInterface := dal.NewDataAccessLayerSQL(db, redisClient)
 	server := api.NewServer(dalInterface)
 
 	err = server.Start(":8080")

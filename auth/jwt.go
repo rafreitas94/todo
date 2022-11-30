@@ -15,7 +15,7 @@ func SignJWTClaims(claims jwt.Claims) (string, error) {
 	return token.SignedString(mySigningKey)
 }
 
-func ValidateJWT(jwtString string) (string, error) {
+func ValidateJWT(jwtString string) (string, string, error) {
 	mySigningKey := []byte("segredo-jwt")
 
 	var userClaims jwt.RegisteredClaims
@@ -24,17 +24,17 @@ func ValidateJWT(jwtString string) (string, error) {
 	})
 
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if !token.Valid {
-		return "", fmt.Errorf("Token invalido")
+		return "", "", fmt.Errorf("Token invalido")
 	}
 
 	if userClaims.ExpiresAt.Before(time.Now()) {
-		return "", fmt.Errorf("Token expirado")
+		return "", "", fmt.Errorf("Token expirado")
 	}
 
 	// Subject == username
-	return userClaims.Subject, nil
+	return userClaims.Subject, userClaims.ID, nil
 }

@@ -112,19 +112,19 @@ func (s *Server) Start(address string) error {
 			// com o JWT no cookie, validar o JWT recebido
 			// validando a assinature e a data de expiracao do token
 			// returnando o nome do usuario inserido na claim Subject
-			username, err := auth.ValidateJWT(jwtString)
+			username, sessionID, err := auth.ValidateJWT(jwtString)
 			if err != nil {
 				return c.String(http.StatusUnauthorized, err.Error())
 			}
 
 			fmt.Println("user autenticado via jwt", username)
 
-			// username, err := s.taskDal.AuthenticateSession(sessionId)
-			// if err != nil {
-			// 	// 401 Unauthorized
-			// 	fmt.Println("cookie de sessao nao corresponde a uma sessao valida.")
-			// 	return c.NoContent(http.StatusUnauthorized)
-			// }
+			_, err = s.taskDal.AuthenticateSession(sessionID)
+			if err != nil {
+				// 401 Unauthorized
+				fmt.Println("cookie de sessao nao corresponde a uma sessao valida.")
+				return c.NoContent(http.StatusUnauthorized)
+			}
 
 			// fmt.Println("usuario autenticado via sessao", username)
 
