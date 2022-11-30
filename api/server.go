@@ -12,6 +12,23 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
+// temos dois servicos
+// - servico de autenticacao
+// 		- uma rota para login, gera um JWT
+
+// - service de todos
+// 		- independentemente consigo validar o JWT
+//			- somente em posse do segredo JWT
+// 			- sem necessitar ter acesso ao banco de usuarios, session, senhas, etc
+
+// em um cenario mais avancado
+// o servido de todo pode ficar completamente isolado das questao de auth, sem conhecimento de tokens, sessoes.
+
+// Cliente (Navegador)
+// --> Requisicao HTTP
+// --> Recebido na infra cloud
+// --> Validar o token JWT --> Encaminha a requiscao para o servico de todos
+
 type CreateTaskAPIRequest struct {
 	Subject     string `json:"subject"` //struct tags - anotacao de campos de struct
 	Description string `json:"description"`
@@ -84,10 +101,6 @@ func (s *Server) Start(address string) error {
 		return func(c echo.Context) error {
 			fmt.Println("executando o middleware de autenticacao")
 
-			// com o JWT no cookie, validar o JWT recebido
-			// validando a assinature e a data de expiracao do token
-			// returnando o nome do usuario inserido na claim Subject.
-
 			cookie, err := c.Cookie("session")
 			if err != nil { // se erro, cookie nao esta presente
 				// 401 Unauthorized
@@ -95,16 +108,25 @@ func (s *Server) Start(address string) error {
 				return c.NoContent(http.StatusUnauthorized)
 			}
 
-			sessionId := cookie.Value
-
-			username, err := s.taskDal.AuthenticateSession(sessionId) //
+			jwtString := cookie.Value
+			// com o JWT no cookie, validar o JWT recebido
+			// validando a assinature e a data de expiracao do token
+			// returnando o nome do usuario inserido na claim Subject
+			username, err := auth.ValidateJWT(jwtString)
 			if err != nil {
-				// 401 Unauthorized
-				fmt.Println("cookie de sessao nao corresponde a uma sessao valida.")
-				return c.NoContent(http.StatusUnauthorized)
+				return c.String(http.StatusUnauthorized, err.Error())
 			}
 
-			fmt.Println("usuario autenticado via sessao", username)
+			fmt.Println("user autenticado via jwt", username)
+
+			// username, err := s.taskDal.AuthenticateSession(sessionId)
+			// if err != nil {
+			// 	// 401 Unauthorized
+			// 	fmt.Println("cookie de sessao nao corresponde a uma sessao valida.")
+			// 	return c.NoContent(http.StatusUnauthorized)
+			// }
+
+			// fmt.Println("usuario autenticado via sessao", username)
 
 			return next(c)
 		}
