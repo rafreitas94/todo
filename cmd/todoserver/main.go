@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"todo/api"
 	"todo/dal"
 
@@ -13,7 +14,15 @@ import (
 
 func main() {
 
-	db, err := sqlx.Connect("postgres", "user=user password=password dbname=todo sslmode=disable")
+	// variaveis de ambiente
+	// POSTGRES_CONNECTION_STRING - define a conexao com banco de dados postgres
+
+	postgresConnectionString := os.Getenv("POSTGRES_CONNECTION_STRING")
+	if postgresConnectionString == "" {
+		postgresConnectionString = "user=user password=password dbname=todo sslmode=disable"
+	}
+
+	db, err := sqlx.Connect("postgres", postgresConnectionString)
 	if err != nil {
 		fmt.Println("verificar se o banco esta sendo executado com o `docker-compose ps`")
 		panic(err)
@@ -25,8 +34,17 @@ func main() {
 		panic(err)
 	}
 
+	redisAddress := os.Getenv("REDIS_ADDRESS")
+	if redisAddress == "" {
+		redisAddress = "localhost:6379"
+	}
+
+	redisUsername := os.Getenv("REDIS_USERNAME")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr:     redisAddress,
+		Username: redisUsername,
+		Password: redisPassword,
 	})
 
 	dalInterface := dal.NewDataAccessLayerSQL(db, redisClient)
