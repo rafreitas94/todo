@@ -34,12 +34,15 @@ func main() {
 		panic(err)
 	}
 
+	// REDIS_ADDRESS define hostname e porta para o servidor redis
 	redisAddress := os.Getenv("REDIS_ADDRESS")
 	if redisAddress == "" {
 		redisAddress = "localhost:6379"
 	}
 
+	// REDIS_USERNAME username de acesso ao servidor
 	redisUsername := os.Getenv("REDIS_USERNAME")
+	// REDIS_PASSWORD senha do username de acesso ao servidor
 	redisPassword := os.Getenv("REDIS_PASSWORD")
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     redisAddress,
