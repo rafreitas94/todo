@@ -287,7 +287,7 @@ func (s *Server) Start(address string) error {
 	})
 
 	e.GET("/", func(c echo.Context) error {
-		return c.HTML(`
+		return c.HTML(http.StatusOK, `
 		<form method="POST" action="/form-auth">
 			<label for="usuario">Usuário</label><br>
 			<input name="usuario" type="text" /><br>

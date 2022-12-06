@@ -2,6 +2,9 @@
 # target:
 #	comandos
 
+build:
+	go build -o todoserver cmd/todoserver/main.go
+
 run:
 	go run cmd/todoserver/main.go
 
