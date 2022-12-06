@@ -53,7 +53,11 @@ func main() {
 	dalInterface := dal.NewDataAccessLayerSQL(db, redisClient)
 	server := api.NewServer(dalInterface)
 
-	err = server.Start(":8080")
+	address := os.Getenv("LISTEN_ADDRESS")
+	if address == "" {
+		address = ":8080"
+	}
+	err = server.Start(address)
 	if err != nil {
 		panic(err)
 	}

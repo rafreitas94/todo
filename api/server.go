@@ -286,6 +286,18 @@ func (s *Server) Start(address string) error {
 		return c.String(http.StatusOK, "Autenticado!")
 	})
 
+	e.GET("/", func(c echo.Context) error {
+		return c.HTML(`
+		<form method="POST" action="/form-auth">
+			<label for="usuario">Usuário</label><br>
+			<input name="usuario" type="text" /><br>
+			<label for="senha">Senha:</label><br>
+			<input name="senha" type="password" /><br>
+			<input type="submit" value="Login" />
+		</form>
+		`)
+	})
+
 	// para requisicoes XHR feitas de uma pagina web que nao
 	// esta hospedada no mesmo dominio da api.
 	e.Use(middleware.CORS())
@@ -296,5 +308,5 @@ func (s *Server) Start(address string) error {
 	// 	AllowOrigins: []string{"web.maua.br"},
 	// }))
 
-	return e.Start(":8080")
+	return e.Start(address)
 }
